@@ -65,6 +65,6 @@ build_script:
   - ctest -C Debug --output-on-failure
 
 artifacts:
-  - path: C:\projects\libvncserver\build\**\*
+  - path: build\**\*
     name: libvncserver-build-$(APPVEYOR_BUILD_ID)
     type: zip
