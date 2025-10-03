@@ -59,6 +59,7 @@ option(WITH_ZLIB "Search for the zlib compression library to support additional 
 option(WITH_LZO "Search for the LZO compression library to omit internal miniLZO implementation" ON)
 option(WITH_JPEG "Search for the libjpeg compression library to support additional encodings" ON)
 option(WITH_PNG "Search for the PNG compression library to support additional encodings" ON)
+option(WITH_AVCODEC "Search for the libavcodec library to support additional encodings" ON)
 option(WITH_SDL "Search for the Simple Direct Media Layer library to build an example SDL vnc client" ON)
 option(WITH_GTK "Search for the GTK library to build an example GTK vnc client" ON)
 option(WITH_LIBSSHTUNNEL "Search for libsshtunnel to build an example ssh-tunneled client" ON)
@@ -148,6 +149,12 @@ if(WITH_PNG)
   find_package(PNG)
 endif(WITH_PNG)
 
+if(WITH_AVCODEC)
+  find_package(PkgConfig)
+  pkg_check_modules(AVCODEC libavcodec)
+  pkg_check_modules(AVUTIL libavutil)
+  pkg_check_modules(SWSCALE libswscale)
+endif(WITH_AVCODEC)
 
 if(WITH_SDL)
   find_package(SDL2)
@@ -274,6 +281,14 @@ if(PNG_FOUND)
 else()
   unset(PNG_LIBRARIES) # would otherwise contain -NOTFOUND, confusing target_link_libraries()
 endif(PNG_FOUND)
+if(AVCODEC_FOUND AND AVUTIL_FOUND AND SWSCALE_FOUND)
+  set(LIBVNCSERVER_HAVE_LIBAVCODEC 1)
+  set(LIBVNCSERVER_HAVE_LIBSWSCALE 1)
+else()
+  unset(AVCODEC_LIBRARIES) # would otherwise contain -NOTFOUND, confusing target_link_libraries()
+  unset(AVUTIL_LIBRARIES)  # would otherwise contain -NOTFOUND, confusing target_link_libraries()
+  unset(SWSCALE_LIBRARIES) # would otherwise contain -NOTFOUND, confusing target_link_libraries()
+endif()
 if(NOT OPENSSL_FOUND)
     unset(OPENSSL_LIBRARIES) # would otherwise contain -NOTFOUND, confusing target_link_libraries()
 endif()
@@ -508,6 +523,16 @@ if(PNG_FOUND)
   include_directories(${PNG_INCLUDE_DIR})
 endif(PNG_FOUND)
 
+if(AVCODEC_FOUND AND AVUTIL_FOUND AND SWSCALE_FOUND)
+  add_definitions(-DLIBVNCSERVER_HAVE_LIBAVCODEC)
+  add_definitions(-DLIBVNCSERVER_HAVE_LIBSWSCALE)
+  include_directories(${AVCODEC_INCLUDE_DIR} ${AVUTIL_INCLUDE_DIR} ${SWSCALE_INCLUDE_DIRS})
+  set(LIBVNCSERVER_SOURCES
+    ${LIBVNCSERVER_SOURCES}
+    ${LIBVNCSERVER_DIR}/h264.c
+  )
+endif()
+
 set(LIBVNCSERVER_SOURCES
     ${LIBVNCSERVER_SOURCES}
     ${TIGHT_C}
@@ -548,6 +573,9 @@ if(WITH_LIBVNCCLIENT)
                         ${ZLIB_LIBRARIES}
                         ${LZO_LIBRARIES}
                         ${JPEG_LIBRARIES}
+                        ${AVCODEC_LIBRARIES}
+                        ${AVUTIL_LIBRARIES}
+                        ${SWSCALE_LIBRARIES}
                         ${CRYPTO_LIBRARIES}
                         ${GNUTLS_LIBRARIES}
                         ${OPENSSL_LIBRARIES}
@@ -562,6 +590,9 @@ if(WITH_LIBVNCSERVER)
                         ${LZO_LIBRARIES}
                         ${JPEG_LIBRARIES}
                         ${PNG_LIBRARIES}
+                        ${AVCODEC_LIBRARIES}
+                        ${AVUTIL_LIBRARIES}
+                        ${SWSCALE_LIBRARIES}
                         ${CRYPTO_LIBRARIES}
                         ${GNUTLS_LIBRARIES}
                         ${OPENSSL_LIBRARIES}
