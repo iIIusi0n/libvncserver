@@ -57,6 +57,15 @@
 #include <rfb/keysym.h>
 #include <rfb/threading.h>
 
+#ifdef LIBVNCSERVER_HAVE_LIBAVCODEC
+struct AVCodecContext;
+struct AVFrame;
+struct AVPacket;
+#ifdef LIBVNCSERVER_HAVE_LIBSWSCALE
+struct SwsContext;
+#endif
+#endif
+
 #ifdef LIBVNCSERVER_HAVE_SASL
 #include <sasl/sasl.h>
 #endif /* LIBVNCSERVER_HAVE_SASL */
@@ -293,6 +302,20 @@ typedef struct _rfbClient {
 
 	int raw_buffer_size;
 	char *raw_buffer;
+
+#ifdef LIBVNCSERVER_HAVE_LIBAVCODEC
+	struct AVCodecContext *h264Decoder;
+	struct AVFrame *h264Frame;
+	struct AVPacket *h264Packet;
+#ifdef LIBVNCSERVER_HAVE_LIBSWSCALE
+	struct SwsContext *h264SwsContext;
+#endif
+	uint8_t *h264BgraBuffer;
+	size_t h264BgraBufferSize;
+	int h264CodecWidth;
+	int h264CodecHeight;
+	int h264LastFormat;
+#endif
 
 #ifdef LIBVNCSERVER_HAVE_LIBZ
 	z_stream decompStream;
@@ -885,6 +908,10 @@ rfbBool rfbClientInitialise(rfbClient* client);
  * @param client The client to clean up
  */
 void rfbClientCleanup(rfbClient* client);
+
+#ifdef LIBVNCSERVER_HAVE_LIBAVCODEC
+void rfbClientH264ReleaseDecoder(rfbClient* client);
+#endif
 
 #if(defined __cplusplus)
 }
