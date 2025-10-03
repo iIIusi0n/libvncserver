@@ -66,6 +66,15 @@ typedef UINT32 in_addr_t;
 
 #include <rfb/threading.h>
 
+#ifdef LIBVNCSERVER_HAVE_LIBAVCODEC
+struct AVCodecContext;
+struct AVFrame;
+struct AVPacket;
+#ifdef LIBVNCSERVER_HAVE_LIBSWSCALE
+struct SwsContext;
+#endif
+#endif
+
 /* if you use pthreads, but don't define LIBVNCSERVER_HAVE_LIBPTHREAD, the structs
    get all mixed up. So this gives a linker error reminding you to compile
    the library and your application (at least the parts including rfb.h)
@@ -582,6 +591,25 @@ typedef struct _rfbClientRec {
     int rawBytesEquivalent;
     int bytesSent;
 
+#ifdef LIBVNCSERVER_HAVE_LIBAVCODEC
+    struct AVCodecContext *h264Encoder;
+    struct AVFrame *h264Frame;
+    struct AVPacket *h264Packet;
+#ifdef LIBVNCSERVER_HAVE_LIBSWSCALE
+    struct SwsContext *h264SwsContext;
+#endif
+    uint8_t *h264RgbBuffer;
+    size_t h264RgbBufferSize;
+    uint8_t *h264EncodeBuffer;
+    size_t h264EncodeBufferSize;
+    int h264CodecWidth;
+    int h264CodecHeight;
+    int64_t h264FramePts;
+    rfbBool h264ForceKeyframe;
+    rfbBool h264SentConfig;
+    int64_t h264BitRate;
+#endif
+
 #ifdef LIBVNCSERVER_HAVE_LIBZ
     /* zlib encoding -- necessary compression state info per client */
 
@@ -824,6 +852,12 @@ extern void rfbClientConnFailed(rfbClientPtr cl, const char *reason);
 extern void rfbNewUDPConnection(rfbScreenInfoPtr rfbScreen,rfbSocket sock);
 extern void rfbProcessUDPInput(rfbScreenInfoPtr rfbScreen);
 extern rfbBool rfbSendFramebufferUpdate(rfbClientPtr cl, sraRegionPtr updateRegion);
+#ifdef LIBVNCSERVER_HAVE_LIBAVCODEC
+extern rfbBool rfbSendRectEncodingH264(rfbClientPtr cl, int x, int y, int w, int h);
+extern void rfbClientH264SetBitrate(rfbClientPtr cl, int64_t bitRate);
+void rfbClientH264ReleaseEncoder(rfbClientPtr cl);
+#endif
+
 extern rfbBool rfbSendRectEncodingRaw(rfbClientPtr cl, int x,int y,int w,int h);
 extern rfbBool rfbSendUpdateBuf(rfbClientPtr cl);
 extern void rfbSendServerCutText(rfbScreenInfoPtr rfbScreen,char *str, int len);
